@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PlanBridge</title>
+  <style>
+    /* ─── Foundation ─── */
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #1c2333;
+      --bg-card: #1c2333;
+      --bg-hover: #252d3a;
+      --border: #2d3748;
+      --border-accent: #e94560;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #6e7681;
+      --accent: #e94560;
+      --accent-hover: #ff6b81;
+      --success: #16c79a;
+      --warning: #f0a500;
+      --info: #4e9af5;
+      --tag-ui: #4e9af5;
+      --tag-biz: #e94560;
+      --tag-val: #f0a500;
+      --tag-int: #16c79a;
+      --tag-data: #a78bfa;
+      --tag-perm: #f472b6;
+      --radius: 6px;
+      --radius-lg: 10px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* ─── Header ─── */
+    .header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-brand { display: flex; align-items: center; gap: 8px; }
+    .header-brand .logo {
+      width: 24px; height: 24px;
+      background: var(--accent);
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 10px; color: white;
+    }
+    .header-brand h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+    .header-actions { display: flex; gap: 6px; }
+
+    /* ─── Buttons ─── */
+    .btn {
+      padding: 6px 12px; border-radius: var(--radius);
+      border: 1px solid var(--border); background: var(--bg-tertiary);
+      color: var(--text-primary); font-size: 12px; cursor: pointer;
+      transition: all 0.15s; display: flex; align-items: center; gap: 5px; white-space: nowrap;
+    }
+    .btn:hover { background: var(--bg-hover); border-color: var(--text-muted); }
+    .btn-accent { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+    .btn-accent:hover { background: var(--accent-hover); }
+    .btn-accent.active { box-shadow: 0 0 0 2px rgba(233,69,96,0.3); animation: pulse 1.5s infinite; }
+    #btnAutoScan.active { background: rgba(22,199,154,0.15); border-color: var(--success); color: var(--success); }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 2px rgba(233,69,96,0.3); }
+      50% { box-shadow: 0 0 0 5px rgba(233,69,96,0.1); }
+    }
+    .btn-sm { padding: 4px 8px; font-size: 11px; }
+    .btn-ghost { border: none; background: transparent; color: var(--text-secondary); }
+    .btn-ghost:hover { color: var(--text-primary); background: var(--bg-hover); }
+
+    /* ─── Tabs ─── */
+    .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg-secondary); padding: 0 12px; }
+    .tab {
+      padding: 10px 12px; font-size: 12px; font-weight: 500;
+      color: var(--text-secondary); cursor: pointer;
+      border-bottom: 2px solid transparent; transition: all 0.15s;
+    }
+    .tab:hover { color: var(--text-primary); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab .badge { background: var(--bg-hover); padding: 1px 6px; border-radius: 8px; font-size: 10px; margin-left: 5px; }
+    .tab.active .badge { background: rgba(233,69,96,0.2); color: var(--accent); }
+
+    /* ─── Content ─── */
+    .content { padding: 12px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ─── Empty State ─── */
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+    .empty-state .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-state p { font-size: 13px; margin-top: 6px; }
+
+    /* ─── Selected Element Info ─── */
+    .element-info { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 12px; }
+    .element-info .el-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .element-info .el-tag { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .el-tag.react { background: rgba(97,218,251,0.15); color: #61dafb; }
+    .el-tag.pbid { background: rgba(233,69,96,0.15); color: var(--accent); }
+    .el-tag.dom { background: rgba(139,148,158,0.15); color: var(--text-secondary); }
+    .element-info .el-name { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+    .element-info .el-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .meta-chip { font-size: 11px; padding: 3px 8px; border-radius: 4px; background: var(--bg-hover); color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
+    .meta-chip .label { color: var(--text-muted); }
+    .hierarchy { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .hierarchy .crumb { font-size: 11px; color: var(--text-muted); }
+    .hierarchy .crumb.current { color: var(--accent); font-weight: 600; }
+    .hierarchy .sep { color: var(--text-muted); font-size: 10px; margin: 0 2px; }
+
+    /* ─── Policy Cards ─── */
+    .policy-section { margin-bottom: 16px; }
+    .policy-section-title { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .policy-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; transition: border-color 0.15s; cursor: pointer; }
+    .policy-card:hover { border-color: var(--text-muted); }
+    .policy-card .pc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .policy-type { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .policy-type.UI_SPEC { background: rgba(78,154,245,0.15); color: var(--tag-ui); }
+    .policy-type.BIZ_RULE { background: rgba(233,69,96,0.15); color: var(--tag-biz); }
+    .policy-type.VALIDATION { background: rgba(240,165,0,0.15); color: var(--tag-val); }
+    .policy-type.INTERACTION { background: rgba(22,199,154,0.15); color: var(--tag-int); }
+    .policy-type.DATA_SPEC { background: rgba(167,139,250,0.15); color: var(--tag-data); }
+
+    /* 정책 유형 카드 */
+    .policy-type-card {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+      background: var(--bg-tertiary); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 8px 10px; cursor: pointer;
+      transition: all 0.15s; text-align: left; color: var(--text-primary);
+    }
+    .policy-type-card:hover { border-color: var(--accent); background: var(--bg-hover); }
+    .policy-type-card.selected { border-color: var(--accent); background: rgba(233,69,96,0.1); box-shadow: 0 0 0 1px var(--accent); }
+    .policy-type.PERMISSION { background: rgba(244,114,182,0.15); color: var(--tag-perm); }
+    .policy-card .pc-version { font-size: 10px; color: var(--text-muted); }
+    .policy-card .pc-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .policy-card .pc-content { font-size: 12px; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap; }
+    .policy-card .pc-actions { display: flex; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+    .policy-card .pc-tags { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+    .pc-tags .tag { font-size: 10px; padding: 1px 6px; border-radius: 3px; background: var(--bg-hover); color: var(--text-muted); }
+    .inherited-badge { font-size: 10px; padding: 1px 6px; border-radius: 3px; background: rgba(78,154,245,0.1); color: var(--info); }
+
+    /* ─── Add Policy Button ─── */
+    .add-policy-btn { width: 100%; padding: 10px; border: 1px dashed var(--border); border-radius: var(--radius); background: transparent; color: var(--text-muted); font-size: 12px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; }
+    .add-policy-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(233,69,96,0.05); }
+
+    /* ─── Modal ─── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; backdrop-filter: blur(2px); }
+    .modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; padding-top: 24px; }
+    .modal { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 95%; max-height: 90vh; overflow-y: auto; padding: 20px; }
+    .modal h3 { font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .form-group select, .form-group input, .form-group textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-primary); color: var(--text-primary); font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.15s; }
+    .form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
+    .form-group textarea { min-height: 100px; resize: vertical; line-height: 1.6; }
+    .form-group .tag-input { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-primary); min-height: 36px; cursor: text; }
+    .form-group .tag-input .tag { background: var(--bg-hover); padding: 2px 8px; border-radius: 3px; font-size: 11px; display: flex; align-items: center; gap: 4px; }
+    .form-group .tag-input .tag .remove { cursor: pointer; opacity: 0.5; }
+    .form-group .tag-input .tag .remove:hover { opacity: 1; }
+    .form-group .tag-input input { border: none; background: transparent; padding: 2px; flex: 1; min-width: 60px; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .scope-options { display: flex; gap: 6px; flex-wrap: wrap; }
+    .scope-options label { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 12px; display: flex; align-items: center; gap: 4px; padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: all 0.15s; }
+    .scope-options label:hover { border-color: var(--text-muted); }
+    .scope-options input:checked + span { color: var(--accent); }
+    .scope-options label:has(input:checked) { border-color: var(--accent); background: rgba(233,69,96,0.05); }
+    .scope-options input { display: none; }
+
+    /* ─── Scan Results ─── */
+    .scan-tree { font-size: 12px; }
+    .scan-item { padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.1s; }
+    .scan-item:hover { background: var(--bg-hover); }
+    .scan-item .icon { font-size: 14px; }
+    .scan-item .name { font-weight: 500; }
+    .scan-item .detail { color: var(--text-muted); font-size: 11px; }
+    .scan-group { margin-bottom: 4px; }
+    .scan-group-header { padding: 8px 8px; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .scan-group-header:hover { color: var(--text-primary); }
+    .scan-group-children { padding-left: 16px; }
+
+    /* ─── Search ─── */
+    .search-container { margin-bottom: 12px; position: relative; }
+    .search-input { width: 100%; padding: 8px 10px 8px 32px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-secondary); color: var(--text-primary); font-size: 12px; outline: none; }
+    .search-input:focus { border-color: var(--accent); }
+    .search-container::before { content: '🔍'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; }
+    .search-result-item { padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px; cursor: pointer; transition: all 0.15s; }
+    .search-result-item:hover { border-color: var(--accent); background: var(--bg-hover); }
+    .search-result-item .sr-name { font-weight: 600; font-size: 13px; }
+    .search-result-item .sr-text { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+    .search-result-item .sr-meta { font-size: 10px; color: var(--text-muted); margin-top: 4px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ─── Stats Bar ─── */
+    .stats-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .stat { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; flex: 1; min-width: 80px; }
+    .stat .stat-value { font-size: 18px; font-weight: 800; color: var(--accent); }
+    .stat .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ─── TODO ─── */
+    .todo-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px; }
+    .todo-item.done { opacity: 0.5; }
+    .todo-item .todo-header { display: flex; align-items: flex-start; gap: 8px; }
+    .todo-item .todo-header input[type="checkbox"] { margin-top: 3px; accent-color: var(--accent); cursor: pointer; }
+    .todo-item .todo-body { flex: 1; }
+    .todo-item .todo-title { font-size: 13px; font-weight: 600; }
+    .todo-item.done .todo-title { text-decoration: line-through; color: var(--text-muted); }
+    .todo-item .todo-desc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; white-space: pre-wrap; line-height: 1.5; }
+    .todo-item .todo-meta { font-size: 10px; color: var(--text-muted); margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .todo-item .todo-meta .todo-element { color: var(--info); cursor: pointer; }
+    .todo-item .todo-meta .todo-element:hover { text-decoration: underline; }
+    .todo-item .todo-actions { display: flex; gap: 4px; margin-top: 6px; }
+    .todo-priority { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; }
+    .todo-priority.HIGH { background: rgba(233,69,96,0.15); color: var(--accent); }
+    .todo-priority.MEDIUM { background: rgba(240,165,0,0.15); color: var(--warning); }
+    .todo-priority.LOW { background: rgba(78,154,245,0.15); color: var(--info); }
+
+    /* ─── Page Policy Meta ─── */
+    .pc-meta { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+    .pc-meta-item { font-size: 11px; color: var(--text-secondary); line-height: 1.8; display: flex; align-items: center; gap: 4px; }
+    .pc-meta-item .mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 10px; color: var(--info); }
+    .page-policy { border-left: 3px solid var(--accent); }
+    .page-policy.inherited { border-left-color: var(--info); opacity: 0.8; }
+    .scan-policy-count { font-size: 9px; font-weight: 700; background: rgba(233,69,96,0.2); color: var(--accent); padding: 1px 5px; border-radius: 8px; margin-left: auto; }
+
+    /* ─── Toast ─── */
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--success); color: white; padding: 8px 20px; border-radius: var(--radius); font-size: 12px; font-weight: 600; z-index: 2000; transition: transform 0.3s ease; white-space: nowrap; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ─── Settings ─── */
+    .settings-section { margin-bottom: 20px; }
+    .settings-section h4 { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+    .settings-row { margin-bottom: 12px; }
+    .settings-row label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .settings-row input { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-primary); color: var(--text-primary); font-size: 13px; outline: none; }
+    .settings-row input:focus { border-color: var(--accent); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* ─── Mode Toggle ─── */
+    .mode-toggle {
+      display: flex;
+      gap: 0;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 3px;
+      margin: 8px 12px 0;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 6px 10px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .mode-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+    .mode-btn.active { background: var(--bg-secondary); color: var(--text-primary); font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+    .mode-btn.active.dev-mode { color: var(--info); }
+    .mode-btn.active.plan-mode { color: var(--accent); }
+
+    /* ─── Developer Mode UI ─── */
+    .dev-section { display: none; }
+    .dev-section.visible { display: block; }
+    .planner-section { display: block; }
+    .planner-section.hidden { display: none; }
+
+    .dev-schema-box {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px;
+      margin-bottom: 8px;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      color: var(--info);
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .dev-code-box {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px;
+      margin-top: 8px;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #a78bfa;
+      white-space: pre-wrap;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .dev-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .dev-actions .btn { flex: 1; justify-content: center; }
+
+    .todo-count-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(240,165,0,0.2);
+      color: var(--warning);
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 7px;
+      margin-left: 6px;
+    }
+
+    /* ─── Change Request Form ─── */
+    .cr-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    .cr-toggle-btn {
+      width: 100%;
+      padding: 10px 14px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.15s;
+    }
+    .cr-toggle-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .cr-toggle-btn .cr-arrow { font-size: 10px; transition: transform 0.2s; }
+    .cr-toggle-btn.open .cr-arrow { transform: rotate(180deg); }
+    #cr-form-section {
+      padding: 12px 14px 14px;
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+    #cr-form-section.open { display: block; }
+    #cr-form-section h4 { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+    #cr-form-section input,
+    #cr-form-section textarea,
+    #cr-form-section select {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      margin-bottom: 8px;
+      transition: border-color 0.15s;
+    }
+    #cr-form-section input:focus,
+    #cr-form-section textarea:focus,
+    #cr-form-section select:focus { border-color: var(--accent); }
+    #cr-form-section textarea { min-height: 72px; resize: vertical; line-height: 1.5; }
+    #cr-form-section label { display: block; font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+    #cr-submit {
+      width: 100%;
+      padding: 8px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 4px;
+    }
+    #cr-submit:hover { background: var(--accent-hover); }
+    #cr-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-brand">
+      <div class="logo">PB</div>
+      <h1>PlanBridge</h1>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-sm" id="btnAutoScan" title="DOM 자동 스캔 ON/OFF">🔄 자동</button>
+      <button class="btn btn-sm" id="btnScan" title="페이지 스캔 (Ctrl+Shift+S)">📡 스캔</button>
+      <button class="btn btn-accent btn-sm" id="btnInspect" title="요소 선택 모드 (Ctrl+Shift+F / ESC로 취소)">🎯 선택</button>
+    </div>
+  </div>
+
+  <!-- Mode Toggle -->
+  <div class="mode-toggle">
+    <button class="mode-btn plan-mode active" id="btnModePlanner" title="기획자 모드">📋 기획자</button>
+    <button class="mode-btn dev-mode" id="btnModeDev" title="개발자 모드">⚡ 개발자</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" data-tab="policies">정책 <span class="badge" id="policyCount">0</span></div>
+    <div class="tab" data-tab="tree">트리 <span class="badge" id="treeCount">0</span></div>
+    <div class="tab" data-tab="search">검색</div>
+    <div class="tab" data-tab="todo">TODO <span class="badge" id="todoCount">0</span></div>
+    <div class="tab" data-tab="settings">설정</div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- 정책 탭 -->
+    <div class="panel active" id="panel-policies">
+      <div id="noSelection" class="empty-state">
+        <div class="icon">🎯</div>
+        <strong>요소를 선택하세요</strong>
+        <p>상단의 "선택" 버튼을 누른 후<br>페이지에서 요소를 클릭하세요</p>
+        <div style="margin-top:16px;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);text-align:left;font-size:11px;line-height:2;">
+          <div style="font-weight:700;margin-bottom:4px;color:var(--text-secondary);">⌨️ 단축키</div>
+          <div><kbd style="background:var(--bg-hover);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:10px;">Ctrl+Shift+F</kbd> 선택 모드 토글</div>
+          <div><kbd style="background:var(--bg-hover);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:10px;">Ctrl+Shift+S</kbd> 페이지 스캔</div>
+          <div><kbd style="background:var(--bg-hover);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:10px;">ESC</kbd> 선택 모드 해제</div>
+        </div>
+      </div>
+
+      <div id="selectionView" style="display:none;">
+        <div class="element-info" id="elementInfo"></div>
+
+        <!-- ── Developer Mode Section ── -->
+        <div class="dev-section" id="devModeSection">
+          <div class="policy-section">
+            <div class="policy-section-title">
+              ⚡ 개발자 도구
+              <span id="devTodoBadge" class="todo-count-badge hidden">0 TODO</span>
+            </div>
+            <div class="dev-actions">
+              <button class="btn btn-sm" id="btnCopyPrompt">📋 Claude Code 프롬프트 복사</button>
+              <button class="btn btn-sm" id="btnGenCode">⚡ TypeScript 코드 생성</button>
+            </div>
+            <div id="devSchemaLabel" style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:none;">JSON Schema / Dev Prompt</div>
+            <div id="devSchemaBox" class="dev-schema-box hidden">프롬프트 변환 결과가 여기 표시됩니다...</div>
+            <div id="devCodeLabel" style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:8px;margin-bottom:4px;display:none;">Generated TypeScript / Zod</div>
+            <div id="devCodeBox" class="dev-code-box hidden">코드 생성 결과가 여기 표시됩니다...</div>
+          </div>
+        </div>
+
+        <!-- ── Planner Mode: TODO & Policies ── -->
+        <div class="planner-section" id="plannerSection">
+          <!-- 해당 요소의 TODO -->
+          <div class="policy-section" id="elementTodoSection" style="display:none;">
+            <div class="policy-section-title">📝 변경 TODO <span class="badge" id="elementTodoCount">0</span></div>
+            <div id="elementTodos"></div>
+          </div>
+
+          <div class="policy-section">
+            <div class="policy-section-title">◆ 적용 정책 <span class="badge" id="appliedCount">0</span></div>
+            <div id="appliedPolicies"></div>
+          </div>
+
+          <div class="policy-section">
+            <div class="policy-section-title">◇ 상속 정책 <span class="badge" id="inheritedCount">0</span></div>
+            <div id="inheritedPolicies"></div>
+          </div>
+
+          <button class="add-policy-btn" id="btnAddPolicy">+ 새 정책 추가</button>
+        </div>
+
+        <!-- ── Change Request Form (both modes) ── -->
+        <div class="cr-section" id="crSection">
+          <button class="cr-toggle-btn" id="crToggleBtn">
+            <span>🔄 변경 요청 생성</span>
+            <span class="cr-arrow">▼</span>
+          </button>
+          <div id="cr-form-section">
+            <h4>변경 요청 생성</h4>
+            <label>요청 제목</label>
+            <input id="cr-title" placeholder="요청 제목" />
+            <label>현재 상태</label>
+            <textarea id="cr-current" placeholder="현재 상태를 설명해주세요..."></textarea>
+            <label>원하는 상태</label>
+            <textarea id="cr-desired" placeholder="원하는 상태를 설명해주세요..."></textarea>
+            <label>우선순위</label>
+            <select id="cr-priority">
+              <option value="LOW">낮음</option>
+              <option value="MEDIUM" selected>보통</option>
+              <option value="HIGH">높음</option>
+              <option value="CRITICAL">긴급</option>
+            </select>
+            <button id="cr-submit">변경 요청 제출</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 트리 탭 -->
+    <div class="panel" id="panel-tree">
+      <div id="noTree" class="empty-state">
+        <div class="icon">📡</div>
+        <strong>스캔이 필요합니다</strong>
+        <p>"스캔" 버튼으로 페이지 구조를 수집하세요</p>
+      </div>
+      <div id="treeView" style="display:none;">
+        <div class="stats-bar" id="scanStats"></div>
+        <div class="scan-tree" id="scanTree"></div>
+      </div>
+    </div>
+
+    <!-- 검색 탭 (텍스트 기반 컴포넌트 검색) -->
+    <div class="panel" id="panel-search">
+      <div class="search-container">
+        <input type="text" class="search-input" id="searchInput" placeholder="화면에 보이는 텍스트로 컴포넌트 찾기...">
+      </div>
+      <div id="searchResults">
+        <div class="empty-state" style="padding: 32px;">
+          <div class="icon">🔍</div>
+          <strong>텍스트로 컴포넌트 찾기</strong>
+          <p>화면에 보이는 텍스트(버튼명, 라벨 등)를<br>입력하면 해당 컴포넌트를 찾아줍니다</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TODO 탭 -->
+    <div class="panel" id="panel-todo">
+      <div style="margin-bottom:12px;">
+        <button class="btn btn-accent btn-sm" id="btnAddTodo" style="width:100%;justify-content:center;">+ 변경 TODO 추가</button>
+      </div>
+      <div id="todoList">
+        <div class="empty-state" style="padding:32px;">
+          <div class="icon">📝</div>
+          <strong>변경 TODO가 없습니다</strong>
+          <p>화면에 변경할 내용을 등록하세요.<br>요소를 선택한 후 추가하면 컴포넌트에 연결됩니다.</p>
+        </div>
+      </div>
+    </div>
+    <!-- 설정 탭 -->
+    <div class="panel" id="panel-settings">
+      <div class="settings-section">
+        <h4>API 연결 설정</h4>
+        <div class="settings-row">
+          <label>API URL</label>
+          <input type="text" id="settingsApiUrl" placeholder="http://localhost:8080">
+        </div>
+        <div class="settings-row">
+          <label>웹(SaaS) URL</label>
+          <input type="text" id="settingsWebUrl" placeholder="비우면 API URL로 자동 추론">
+        </div>
+        <div class="settings-row">
+          <label>Project ID</label>
+          <input type="text" id="settingsProjectId" placeholder="프로젝트 ID 입력">
+        </div>
+        <button class="btn btn-accent" id="btnSaveSettings" style="width:100%;justify-content:center;margin-top:8px;">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Policy Modal -->
+  <div class="modal-overlay" id="policyModal">
+    <div class="modal">
+      <h3>📋 <span id="modalTitle">새 정책 추가</span></h3>
+      <div class="form-group">
+        <label>어떤 규칙인가요?</label>
+        <!-- 기획자 친화적 카드형 선택 -->
+        <div id="policyTypeCards" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+          <button type="button" class="policy-type-card" data-value="VALIDATION" onclick="selectPolicyTypeCard('VALIDATION')">
+            <span style="font-size:16px">📝</span>
+            <strong style="font-size:11px">입력 규칙</strong>
+            <span style="font-size:10px;color:#8b949e">필수, 길이, 형식 검증</span>
+          </button>
+          <button type="button" class="policy-type-card" data-value="UI_SPEC" onclick="selectPolicyTypeCard('UI_SPEC')">
+            <span style="font-size:16px">👁️</span>
+            <strong style="font-size:11px">화면 표시</strong>
+            <span style="font-size:10px;color:#8b949e">포맷, 색상, 말줄임</span>
+          </button>
+          <button type="button" class="policy-type-card" data-value="INTERACTION" onclick="selectPolicyTypeCard('INTERACTION')">
+            <span style="font-size:16px">🖱️</span>
+            <strong style="font-size:11px">동작 규칙</strong>
+            <span style="font-size:10px;color:#8b949e">클릭 시 반응, 모달</span>
+          </button>
+          <button type="button" class="policy-type-card" data-value="BIZ_RULE" onclick="selectPolicyTypeCard('BIZ_RULE')">
+            <span style="font-size:16px">💼</span>
+            <strong style="font-size:11px">업무 규칙</strong>
+            <span style="font-size:10px;color:#8b949e">할인율, 권한 조건</span>
+          </button>
+          <button type="button" class="policy-type-card" data-value="DATA_SPEC" onclick="selectPolicyTypeCard('DATA_SPEC')">
+            <span style="font-size:16px">🔌</span>
+            <strong style="font-size:11px">데이터 연동</strong>
+            <span style="font-size:10px;color:#8b949e">API 스펙, 데이터 형식</span>
+          </button>
+          <button type="button" class="policy-type-card" data-value="PERMISSION" onclick="selectPolicyTypeCard('PERMISSION')">
+            <span style="font-size:16px">🔑</span>
+            <strong style="font-size:11px">권한/접근</strong>
+            <span style="font-size:10px;color:#8b949e">누가 볼 수 있는지</span>
+          </button>
+        </div>
+        <!-- 숨겨진 실제 select (JS에서 사용) -->
+        <select id="policyType" style="display:none">
+          <option value="VALIDATION">VALIDATION</option>
+          <option value="UI_SPEC">UI_SPEC</option>
+          <option value="INTERACTION">INTERACTION</option>
+          <option value="BIZ_RULE">BIZ_RULE</option>
+          <option value="DATA_SPEC">DATA_SPEC</option>
+          <option value="PERMISSION">PERMISSION</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>적용 범위</label>
+        <div class="scope-options">
+          <label><input type="radio" name="scope" value="ELEMENT" checked><span>이 요소만</span></label>
+          <label><input type="radio" name="scope" value="COMPONENT"><span>컴포넌트 전체</span></label>
+          <label><input type="radio" name="scope" value="PAGE"><span>이 페이지</span></label>
+          <label><input type="radio" name="scope" value="GLOBAL"><span>전역 (GLOBAL)</span></label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>제목</label>
+        <input type="text" id="policyTitle" placeholder="정책을 한 줄로 요약하세요">
+      </div>
+      <div class="form-group">
+        <label>내용</label>
+        <textarea id="policyContent" placeholder="정책 내용을 자유롭게 작성하세요."></textarea>
+      </div>
+      <div class="form-group">
+        <label>태그 (Enter로 추가)</label>
+        <div class="tag-input" id="tagInput">
+          <input type="text" id="tagInputField" placeholder="태그 입력 후 Enter">
+        </div>
+      </div>
+      <div class="form-group" id="policyChangeReasonGroup" style="display:none;">
+        <label>변경 사유 (변경요청 생성 시)</label>
+        <textarea id="policyChangeReason" placeholder="왜 바꾸는지 적어주세요. 개발 TODO 생성에 활용됩니다.&#10;예) 마케팅팀 요청 - 시즌 특가 95% 할인 허용"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="btnCancelPolicy">취소</button>
+        <button class="btn btn-accent" id="btnSavePolicy">저장</button>
+        <button class="btn btn-accent" id="btnSaveAndCr" style="display:none;">💾 저장 + 변경요청 생성</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODO Modal -->
+  <div class="modal-overlay" id="todoModal">
+    <div class="modal">
+      <h3>📝 <span id="todoModalTitle">변경 TODO 추가</span></h3>
+      <div class="form-group">
+        <label>제목 *</label>
+        <input type="text" id="todoTitle" placeholder="변경할 내용을 한 줄로 요약">
+      </div>
+      <div class="form-group">
+        <label>상세 설명</label>
+        <textarea id="todoDesc" placeholder="변경 사항을 상세히 설명하세요.&#10;예) 수량 선택 드롭다운을 장바구니 버튼 왼쪽에 추가&#10;범위: 1~10, 기본값 1"></textarea>
+      </div>
+      <div class="form-group">
+        <label>우선순위</label>
+        <div class="scope-options">
+          <label><input type="radio" name="todoPriority" value="HIGH"><span>🔴 높음</span></label>
+          <label><input type="radio" name="todoPriority" value="MEDIUM" checked><span>🟡 보통</span></label>
+          <label><input type="radio" name="todoPriority" value="LOW"><span>🔵 낮음</span></label>
+        </div>
+      </div>
+      <div class="form-group" id="todoElementGroup">
+        <label>연결된 요소</label>
+        <div id="todoElementDisplay" style="font-size:12px;color:var(--info);padding:6px 0;">선택된 요소 없음</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="btnCancelTodo">취소</button>
+        <button class="btn btn-accent" id="btnSaveTodo">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="mock-policies.js"></script>
+  <script src="sidepanel.js"></script>
+  <script>
+    // 정책 유형 카드 선택 함수 (전역 - onclick에서 호출)
+    function selectPolicyTypeCard(value) {
+      document.querySelectorAll('.policy-type-card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.value === value);
+      });
+      const select = document.getElementById('policyType');
+      if (select) select.value = value;
+    }
+    // 초기 선택값 설정
+    document.addEventListener('DOMContentLoaded', () => {
+      selectPolicyTypeCard('VALIDATION');
+    });
+  </script>
+</body>
+</html>
