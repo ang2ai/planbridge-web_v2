@@ -68,9 +68,9 @@ async function getData(id: string): Promise<{
 export default async function ProjectDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = await params;
+  const { id } = params;
   const { project, components, error } = await getData(id);
 
   if (error && !project) {
