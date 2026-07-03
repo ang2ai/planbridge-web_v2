@@ -54,13 +54,43 @@
   }
 
   // ─── API Helpers ───
+  // content.js 스캔 결과를 백엔드 ScanDataRequest 형식으로 변환.
+  // (pageRoute→routePath, tagName→elementTag, innerText→currentText,
+  //  reactHierarchy 배열→JSON 문자열 — 백엔드 DTO가 String 필드)
+  function toScanRequest(scanData) {
+    const comps = (scanData.components || [])
+      .filter(c => c.pbId) // pbId 없는 요소는 upsert 키가 없어 제외
+      .map((c, i) => ({
+        pbId: c.pbId,
+        componentName: c.componentName || c.pbId,
+        cssSelector: c.cssSelector || '',
+        componentType: c.pbType || null,
+        elementTag: c.tagName || null,
+        currentProps: c.reactProps ? JSON.stringify(c.reactProps) : null,
+        currentText: c.innerText || null,
+        reactHierarchy: Array.isArray(c.reactHierarchy)
+          ? JSON.stringify(c.reactHierarchy)
+          : (c.reactHierarchy || null),
+        treePath: Array.isArray(c.reactHierarchy) ? c.reactHierarchy.join(' > ') : null,
+        depthLevel: Array.isArray(c.reactHierarchy) ? c.reactHierarchy.length : null,
+        sortOrder: i
+      }));
+    return {
+      routePath: scanData.pageRoute || '/',
+      pageTitle: scanData.pageTitle || null,
+      scanType: 'EXTENSION',
+      scannedBy: 'extension',
+      components: comps
+    };
+  }
+
   async function sendScanToApi(scanPayload) {
     const { apiUrl, projectId } = await getSettings();
     if (!projectId) { showError('Project ID를 설정해주세요'); return null; }
     const res = await safeFetch(`${apiUrl}/api/projects/${projectId}/scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(scanPayload)
+      body: JSON.stringify(toScanRequest(scanPayload))
     });
     if (!res.ok) throw new Error(`스캔 API 오류: ${res.status}`);
     return res.json();
