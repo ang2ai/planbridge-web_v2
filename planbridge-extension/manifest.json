@@ -1,8 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PlanBridge",
-  "version": "0.1.0",
-  "update_url": "NEXT_PUBLIC_EXTENSION_UPDATE_URL",
+  "version": "0.1.1",
   "description": "기획-개발 브릿지 시스템. 웹 요소를 선택하고 정책을 관리합니다.",
   "permissions": [
     "activeTab",
