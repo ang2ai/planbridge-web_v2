@@ -785,8 +785,12 @@
         el.classList.add('pb-no-policy');
       }
 
-      const moveHandler = (e) => showTooltip(e, pbId, status);
-      const leaveHandler = () => hideTooltip();
+      // mousemove는 버블링되므로 stopPropagation 없이 두면
+      // 자식→부모 순으로 계속 재실행되어, 결국 가장 바깥 조상(RootLayout.html 등)의
+      // 핸들러가 마지막에 덮어써서 항상 조상의 상태만 표시되는 문제가 있었음.
+      // stopPropagation으로 가장 안쪽(마우스 바로 아래) 요소의 핸들러만 실행되게 함.
+      const moveHandler = (e) => { e.stopPropagation(); showTooltip(e, pbId, status); };
+      const leaveHandler = (e) => { e.stopPropagation(); hideTooltip(); };
       el._pbMouseMove = moveHandler;
       el._pbMouseLeave = leaveHandler;
       el.addEventListener('mousemove', moveHandler);
