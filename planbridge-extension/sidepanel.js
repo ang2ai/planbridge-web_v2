@@ -1139,7 +1139,7 @@
 
       // API에서 각 pbId의 정책 수 조회
       const policyStatusMap = {};
-      const checks = pbIds.slice(0, 50).map(async (pbId) => {
+      const checks = pbIds.slice(0, 200).map(async (pbId) => {
         try {
           const res = await safeFetch(`${apiUrl}/api/policies/search?q=${encodeURIComponent(pbId)}&projectId=${projectId}`);
           if (!res.ok) { policyStatusMap[pbId] = 'no_policy'; return; }

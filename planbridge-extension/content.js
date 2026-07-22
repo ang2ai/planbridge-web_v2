@@ -789,11 +789,15 @@
       clearPolicyVisualization();
       sendResponse({ ok: true });
     }
-    // GET_PB_IDS: 현재 페이지의 모든 data-pb-id 목록 반환
+    // GET_PB_IDS: 현재 페이지의 고유 data-pb-id 목록 반환
+    // 중복 제거 필수 — 안 하면 sidepanel의 slice(0,50)이 같은 pbId 반복분만 소진하고
+    // 뒤쪽의 실제 다른 컴포넌트는 정책 시각화 검사에서 영영 누락됨
     if (message.type === 'GET_PB_IDS') {
-      const ids = Array.from(document.querySelectorAll('[data-pb-id]'))
-        .map(el => el.getAttribute('data-pb-id'))
-        .filter(Boolean);
+      const ids = [...new Set(
+        Array.from(document.querySelectorAll('[data-pb-id]'))
+          .map(el => el.getAttribute('data-pb-id'))
+          .filter(Boolean)
+      )];
       sendResponse({ pbIds: ids });
     }
     return true;
