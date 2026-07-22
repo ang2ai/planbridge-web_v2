@@ -272,11 +272,15 @@
           pageRoute: el.pageRoute || window.location.pathname
         })
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+        console.warn('[PlanBridge] resolveComponentId 실패:', res.status, { projectId, pbId: el.pbId, pageRoute: el.pageRoute || window.location.pathname });
+        return null;
+      }
       const json = await res.json();
       const comp = json.data || json;
       return comp?.componentId || null;
-    } catch {
+    } catch (e) {
+      console.warn('[PlanBridge] resolveComponentId 예외:', e);
       return null;
     }
   }
@@ -714,14 +718,18 @@
     currentPolicies = [];
 
     // componentId 결정: 실제 DB UUID로 해석(캐시) → 정책 조회/프롬프트에 사용
+    // 주의: resolve 실패 시 pbId/componentName을 컴포넌트ID로 대신 쓰면 안 됨.
+    // UUID가 아닌 문자열로 /api/components/{id}/policies 호출 시 그냥 조용히 빈 배열(0건)이
+    // 반환되어 "정책 등록됨(태그 매칭)"과 "적용 정책 0(FK 미해석)"이 모순돼 보이는
+    // 혼란스러운 상태를 만듦 — 실패는 명확히 실패로 보여줘야 함.
     if (!el.resolvedComponentId) {
       const resolved = await resolveComponentId(el);
       if (resolved) el.resolvedComponentId = resolved;
     }
-    const componentId = el.resolvedComponentId || el.componentId || el.pbId || el.componentName;
+    const componentId = el.resolvedComponentId || el.componentId;
 
     if (!componentId) {
-      appliedContainer.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:8px 0;">컴포넌트 ID가 없습니다</div>';
+      appliedContainer.innerHTML = '<div style="color:#f59e0b;font-size:12px;padding:8px 0;">⚠ 이 컴포넌트를 DB에서 찾지 못했습니다. Project ID 설정이 맞는지, 이 페이지가 스캔되었는지 확인하세요.</div>';
       document.getElementById('appliedCount').textContent = '0';
       document.getElementById('inheritedCount').textContent = '0';
       document.getElementById('policyCount').textContent = '0';
