@@ -351,6 +351,18 @@
     return null;
   }
 
+  // data-pb-id가 실제로 붙은 조상 요소 자체를 반환 (없으면 원본 그대로)
+  // 하이라이트 박스/클릭 대상을 아이콘·텍스트 같은 작은 자식이 아니라
+  // 실제 태깅된 컴포넌트 전체 크기로 맞추기 위함
+  function findClosestPbElement(element) {
+    let el = element;
+    while (el && el !== document.body) {
+      if (el.hasAttribute('data-pb-id')) return el;
+      el = el.parentElement;
+    }
+    return element;
+  }
+
   function findClosestPbType(element) {
     let el = element;
     while (el && el !== document.body) {
@@ -380,9 +392,12 @@
   function onMouseMove(e) {
     if (!inspectorActive) return;
 
-    const target = e.target;
-    if (target === overlay || target === overlayLabel || target === selectedOverlay) return;
-    if (target.className?.toString().startsWith('pb-')) return;
+    const rawTarget = e.target;
+    if (rawTarget === overlay || rawTarget === overlayLabel || rawTarget === selectedOverlay) return;
+    if (rawTarget.className?.toString().startsWith('pb-')) return;
+
+    // 아이콘/텍스트 같은 하위 요소가 아니라 data-pb-id가 붙은 실제 컴포넌트 전체를 대상으로 함
+    const target = findClosestPbElement(rawTarget);
 
     currentHoveredElement = target;
     const rect = target.getBoundingClientRect();
