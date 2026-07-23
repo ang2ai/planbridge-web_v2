@@ -553,6 +553,7 @@
   function setupMessageListener() {
     chrome.runtime.onMessage.addListener((message) => {
       if (message.type === 'ELEMENT_SELECTED') {
+        console.log('[PlanBridge:DEBUG] ELEMENT_SELECTED 수신', message.data?.pbId, new Date().toISOString());
         selectedElement = message.data;
         renderSelectedElement();
         switchTab('policies');
@@ -722,11 +723,14 @@
     // UUID가 아닌 문자열로 /api/components/{id}/policies 호출 시 그냥 조용히 빈 배열(0건)이
     // 반환되어 "정책 등록됨(태그 매칭)"과 "적용 정책 0(FK 미해석)"이 모순돼 보이는
     // 혼란스러운 상태를 만듦 — 실패는 명확히 실패로 보여줘야 함.
+    console.log('[PlanBridge:DEBUG] renderPoliciesForElement 시작', { pbId: el.pbId, existingResolvedId: el.resolvedComponentId, callId: Math.random().toString(36).slice(2,8) });
     if (!el.resolvedComponentId) {
       const resolved = await resolveComponentId(el);
+      console.log('[PlanBridge:DEBUG] resolveComponentId 결과', resolved);
       if (resolved) el.resolvedComponentId = resolved;
     }
     const componentId = el.resolvedComponentId || el.componentId;
+    console.log('[PlanBridge:DEBUG] 최종 componentId', componentId, 'selectedElement===el?', selectedElement === el);
 
     if (!componentId) {
       appliedContainer.innerHTML = '<div style="color:#f59e0b;font-size:12px;padding:8px 0;">⚠ 이 컴포넌트를 DB에서 찾지 못했습니다. Project ID 설정이 맞는지, 이 페이지가 스캔되었는지 확인하세요.</div>';
@@ -775,15 +779,19 @@
     }
 
     // API에 실제 데이터 있으면 교체
+    console.log('[PlanBridge:DEBUG] fetchPoliciesForComponent 호출', componentId);
     fetchPoliciesForComponent(componentId).then(policies => {
+      console.log('[PlanBridge:DEBUG] fetchPoliciesForComponent 성공, 이 시점 selectedElement===el?', selectedElement === el, 'policies:', policies);
       const arr = Array.isArray(policies) ? policies : [];
       if (arr.length > 0) {
         displayPolicies(arr, false);
+        console.log('[PlanBridge:DEBUG] displayPolicies 호출 완료, applied count DOM 값=', document.getElementById('appliedCount').textContent);
       } else if (mockArr.length === 0) {
         appliedContainer.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:8px 0;">등록된 정책이 없습니다</div>';
         renderOpenInSaasButton(componentId);
       }
-    }).catch(() => {
+    }).catch((e) => {
+      console.warn('[PlanBridge:DEBUG] fetchPoliciesForComponent 예외!', e);
       if (mockArr.length === 0) {
         appliedContainer.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:8px 0;">등록된 정책이 없습니다</div>';
         document.getElementById('appliedCount').textContent = '0';
