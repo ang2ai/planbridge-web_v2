@@ -503,7 +503,10 @@
 
   // ─── 페이지 스캔 ───
   // 먼저 injected-script에 스캔 요청 → 결과를 content.js 데이터와 병합
-  async function scanPage() {
+  // isAuto: DOM 자동감지로 발사된 스캔인지 여부. 백엔드가 자동 스캔은
+  // "이미 데이터 있으면 아무것도 안 함"으로 처리해 새로고침마다 데이터가
+  // 계속 쌓이는 걸 막을 수 있도록, 이 플래그를 결과에 실어 보낸다.
+  async function scanPage(isAuto = false) {
     const policyMap = getPagePolicies();
 
     // injected-script로 React Fiber 기반 스캔 시도
@@ -596,7 +599,8 @@
         components: components,
         hasPolicyData: !!policyMap,
         usedInjectedScript: !!injectedResult,
-        scannedAt: new Date().toISOString()
+        scannedAt: new Date().toISOString(),
+        _auto: isAuto
       }
     }); } catch(e) {}
   }
@@ -622,7 +626,7 @@
       // 디바운스: 연속 변경이 끝난 후 한 번만 스캔
       clearTimeout(scanDebounceTimer);
       scanDebounceTimer = setTimeout(() => {
-        scanPage().catch(() => {});
+        scanPage(true).catch(() => {}); // true = 자동 스캔
       }, SCAN_DEBOUNCE_MS);
     });
 

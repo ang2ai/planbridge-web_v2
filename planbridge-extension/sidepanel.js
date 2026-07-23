@@ -78,7 +78,10 @@
     return {
       routePath: scanData.pageRoute || '/',
       pageTitle: scanData.pageTitle || null,
-      scanType: 'EXTENSION',
+      // 자동 스캔(DOM 변화 감지)과 수동 스캔(버튼/단축키)을 구분해서 보낸다.
+      // 백엔드는 AUTO일 때 이미 데이터가 있으면 아무것도 하지 않고 넘어가서
+      // 새로고침/자동감지가 반복돼도 데이터가 계속 쌓이지 않게 함.
+      scanType: scanData._auto ? 'AUTO' : 'MANUAL',
       scannedBy: 'extension',
       components: comps
     };
@@ -591,14 +594,17 @@
       if (message.type === 'SCAN_RESULT') {
         scanData = message.data;
         renderScanResult();
-        if (!scanData._auto) switchTab('tree');
-        const policyNote = scanData.hasPolicyData ? ' (정책 감지)' : '';
-        showToast(`스캔 완료: ${scanData.componentCount}개${policyNote}`);
-        // 스캔 결과를 API로 전송
+        if (!scanData._auto) {
+          switchTab('tree');
+          const policyNote = scanData.hasPolicyData ? ' (정책 감지)' : '';
+          showToast(`스캔 완료: ${scanData.componentCount}개${policyNote}`);
+        }
+        // 스캔 결과를 API로 전송 (자동 스캔은 결과를 조용히 처리 — 토스트로
+        // 매번 알리면 DOM 변화가 잦은 페이지에서 스팸이 됨)
         sendScanToApi(scanData).then(result => {
-          if (result) showToast('스캔 데이터 API 전송 완료');
+          if (result && !scanData._auto) showToast('스캔 데이터 API 전송 완료');
         }).catch(err => {
-          showError(`스캔 API 전송 실패: ${err.message}`);
+          if (!scanData._auto) showError(`스캔 API 전송 실패: ${err.message}`);
         });
       }
       if (message.type === 'INSPECTOR_DEACTIVATED' || message.type === 'CONTENT_SCRIPT_READY') {
