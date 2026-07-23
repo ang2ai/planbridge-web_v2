@@ -221,10 +221,14 @@
     return Array.isArray(arr) ? arr : [];
   }
 
-  function refreshDevPanel() {
+  async function refreshDevPanel() {
     if (!selectedElement) return;
     const el = selectedElement;
-    const componentId = el.componentId || el.pbId || el.componentName;
+    // 주의: el.pbId(예: "ProjectDetailPage.TabsTrigger")는 DB UUID가 아님.
+    // 예전엔 이걸 그대로 componentId로 써서 /api/components/{pbId}/todos가
+    // 항상 매칭 실패 -> TODO가 실제로 있어도 뱃지가 계속 0으로 보였음.
+    if (!el.resolvedComponentId) await resolveComponentId(el);
+    const componentId = el.resolvedComponentId;
     if (!componentId) return;
 
     // Show pending TODO badge
@@ -459,6 +463,26 @@
       }
     });
 
+    // TODO 탭의 "+ 변경 TODO 추가" — 예전엔 아무 리스너도 없는 죽은 버튼이었음.
+    // TODO는 변경요청 -> AI 분석을 거쳐야 생기므로, 그 실제 흐름(정책 탭의
+    // 변경요청 폼)으로 안내한다.
+    const btnAddTodo = document.getElementById('btnAddTodo');
+    if (btnAddTodo) {
+      btnAddTodo.addEventListener('click', () => {
+        if (!selectedElement) {
+          showError('먼저 요소를 선택하세요');
+          return;
+        }
+        switchTab('policies');
+        const crToggleBtn = document.getElementById('crToggleBtn');
+        const crFormSection = document.getElementById('cr-form-section');
+        if (crFormSection && !crFormSection.classList.contains('open')) {
+          crToggleBtn?.click();
+        }
+        showToast('변경 요청을 등록하면 AI가 자동으로 TODO를 만듭니다');
+      });
+    }
+
     // Change request toggle
     const crToggleBtn = document.getElementById('crToggleBtn');
     const crFormSection = document.getElementById('cr-form-section');
@@ -634,6 +658,67 @@
     const panelEl = document.getElementById(`panel-${tabName}`);
     if (tabEl) tabEl.classList.add('active');
     if (panelEl) panelEl.classList.add('active');
+    if (tabName === 'todo') renderTodoTab();
+  }
+
+  // ─── TODO 탭 ───
+  // 이전엔 sidepanel.html의 정적 플레이스홀더만 있고 이 탭을 채우는 코드가
+  // 전혀 없었음(버튼/목록/뱃지 전부 미연결) — 선택된 요소의 실제 DB 컴포넌트
+  // UUID로 /api/components/{id}/todos를 조회해 목록/개수를 채운다.
+  async function renderTodoTab() {
+    const listEl = document.getElementById('todoList');
+    const badgeEl = document.getElementById('todoCount');
+    if (!listEl) return;
+
+    if (!selectedElement) {
+      listEl.innerHTML = `
+        <div class="empty-state" style="padding:32px;">
+          <div class="icon">📝</div>
+          <strong>요소를 먼저 선택하세요</strong>
+          <p>페이지에서 요소를 클릭하면<br>그 컴포넌트에 연결된 TODO를 보여줍니다.</p>
+        </div>`;
+      if (badgeEl) badgeEl.textContent = '0';
+      return;
+    }
+
+    const el = selectedElement;
+    if (!el.resolvedComponentId) {
+      await resolveComponentId(el);
+    }
+    if (!el.resolvedComponentId) {
+      listEl.innerHTML = `
+        <div class="empty-state" style="padding:32px;">
+          <div class="icon">⚠</div>
+          <strong>컴포넌트를 찾을 수 없습니다</strong>
+          <p>이 요소가 아직 스캔되지 않았습니다. 먼저 스캔한 뒤 다시 선택하세요.</p>
+        </div>`;
+      if (badgeEl) badgeEl.textContent = '0';
+      return;
+    }
+
+    const todos = await fetchTodosForComponent(el.resolvedComponentId);
+    if (badgeEl) badgeEl.textContent = String(todos.length);
+
+    if (todos.length === 0) {
+      listEl.innerHTML = `
+        <div class="empty-state" style="padding:32px;">
+          <div class="icon">📝</div>
+          <strong>변경 TODO가 없습니다</strong>
+          <p>이 컴포넌트에 연결된 변경요청이 아직 없습니다.<br>정책 탭에서 "변경 요청 생성"으로 만들면 AI가 자동으로 TODO를 만듭니다.</p>
+        </div>`;
+      return;
+    }
+
+    listEl.innerHTML = todos.map(t => `
+      <div class="policy-card" style="cursor:default;">
+        <div class="pc-header">
+          <span class="policy-type ${t.complexity || 'MODERATE'}">${t.complexity || 'MODERATE'}</span>
+          <span class="pc-version">${t.status || 'PENDING'}</span>
+        </div>
+        <div class="pc-title">${t.title || ''}</div>
+        <div class="pc-content">${(t.prompt || '').slice(0, 200)}</div>
+      </div>
+    `).join('');
   }
 
   // ─── Render Selected Element ───
@@ -685,6 +770,7 @@
 
     renderPoliciesForElement();
     if (currentMode === 'dev') refreshDevPanel();
+    if (document.querySelector('.tab[data-tab="todo"]')?.classList.contains('active')) renderTodoTab();
   }
 
   // ─── MOCK_POLICY_MAP 폴백: pbId 기반 계층 탐색 ───
