@@ -553,7 +553,6 @@
   function setupMessageListener() {
     chrome.runtime.onMessage.addListener((message) => {
       if (message.type === 'ELEMENT_SELECTED') {
-        console.log('[PlanBridge:DEBUG] ELEMENT_SELECTED 수신', message.data?.pbId, new Date().toISOString());
         selectedElement = message.data;
         renderSelectedElement();
         switchTab('policies');
@@ -723,14 +722,11 @@
     // UUID가 아닌 문자열로 /api/components/{id}/policies 호출 시 그냥 조용히 빈 배열(0건)이
     // 반환되어 "정책 등록됨(태그 매칭)"과 "적용 정책 0(FK 미해석)"이 모순돼 보이는
     // 혼란스러운 상태를 만듦 — 실패는 명확히 실패로 보여줘야 함.
-    console.log('[PlanBridge:DEBUG] renderPoliciesForElement 시작', { pbId: el.pbId, existingResolvedId: el.resolvedComponentId, callId: Math.random().toString(36).slice(2,8) });
     if (!el.resolvedComponentId) {
       const resolved = await resolveComponentId(el);
-      console.log('[PlanBridge:DEBUG] resolveComponentId 결과', resolved);
       if (resolved) el.resolvedComponentId = resolved;
     }
     const componentId = el.resolvedComponentId || el.componentId;
-    console.log('[PlanBridge:DEBUG] 최종 componentId', componentId, 'selectedElement===el?', selectedElement === el);
 
     if (!componentId) {
       appliedContainer.innerHTML = '<div style="color:#f59e0b;font-size:12px;padding:8px 0;">⚠ 이 컴포넌트를 DB에서 찾지 못했습니다. Project ID 설정이 맞는지, 이 페이지가 스캔되었는지 확인하세요.</div>';
@@ -779,19 +775,25 @@
     }
 
     // API에 실제 데이터 있으면 교체
-    console.log('[PlanBridge:DEBUG] fetchPoliciesForComponent 호출', componentId);
+    // 주의: fetch 실패(.catch)와 "정책 조회는 성공했지만 이후 부가 UI 렌더링(예:
+    // SaaS 버튼)에서 예외가 남" 경우를 반드시 구분해야 함. displayPolicies가 이미
+    // 정책 개수를 정확히 표시한 뒤 무관한 코드에서 예외가 나면, 그걸 "정책 없음"으로
+    // 오인해 .catch에서 방금 표시한 올바른 결과를 도로 0으로 덮어쓰는 버그가 있었음.
     fetchPoliciesForComponent(componentId).then(policies => {
-      console.log('[PlanBridge:DEBUG] fetchPoliciesForComponent 성공, 이 시점 selectedElement===el?', selectedElement === el, 'policies:', policies);
       const arr = Array.isArray(policies) ? policies : [];
       if (arr.length > 0) {
-        displayPolicies(arr, false);
-        console.log('[PlanBridge:DEBUG] displayPolicies 호출 완료, applied count DOM 값=', document.getElementById('appliedCount').textContent);
+        try {
+          displayPolicies(arr, false);
+        } catch (renderErr) {
+          // 카운트/카드 표시는 이미 끝났을 수 있으니 조용히 로그만 남기고 넘어감
+          console.warn('[PlanBridge] displayPolicies 부가 렌더링 오류(정책 표시 자체는 유효):', renderErr);
+        }
       } else if (mockArr.length === 0) {
         appliedContainer.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:8px 0;">등록된 정책이 없습니다</div>';
         renderOpenInSaasButton(componentId);
       }
     }).catch((e) => {
-      console.warn('[PlanBridge:DEBUG] fetchPoliciesForComponent 예외!', e);
+      console.warn('[PlanBridge] fetchPoliciesForComponent 실패:', e);
       if (mockArr.length === 0) {
         appliedContainer.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:8px 0;">등록된 정책이 없습니다</div>';
         document.getElementById('appliedCount').textContent = '0';
@@ -808,7 +810,6 @@
 
     if (!componentId) return;
 
-    const selectionView = document.getElementById('selectionView');
     const addPolicyBtn = document.getElementById('btnAddPolicy');
 
     const btn = document.createElement('button');
@@ -823,7 +824,15 @@
       });
     });
 
-    selectionView.insertBefore(btn, addPolicyBtn.nextSibling);
+    // addPolicyBtn이 selectionView의 직계 자식이 아닐 수 있어(중첩 래퍼 등)
+    // selectionView.insertBefore(btn, addPolicyBtn.nextSibling)가
+    // "참조 노드가 이 노드의 자식이 아님" 에러로 항상 실패했었음.
+    // addPolicyBtn의 실제 부모를 기준으로 삽입하고, 못 찾으면 selectionView에 append.
+    if (addPolicyBtn && addPolicyBtn.parentNode) {
+      addPolicyBtn.parentNode.insertBefore(btn, addPolicyBtn.nextSibling);
+    } else {
+      document.getElementById('selectionView')?.appendChild(btn);
+    }
   }
 
   function renderApiPolicyCard(policy, isInherited) {
