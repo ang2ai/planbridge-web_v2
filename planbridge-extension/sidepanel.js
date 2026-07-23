@@ -278,6 +278,10 @@
       }
       const json = await res.json();
       const comp = json.data || json;
+      // 응답에 실제 pageId(UUID)도 같이 오므로 el에 캐시해둔다 —
+      // savePolicy에서 PAGE 스코프 정책을 만들 때 el.pageRoute(URL 문자열)를
+      // pageId(UUID)인 것처럼 잘못 보내던 버그의 근본 수정에 필요.
+      if (comp?.pageId) el.resolvedPageId = comp.pageId;
       return comp?.componentId || null;
     } catch (e) {
       console.warn('[PlanBridge] resolveComponentId 예외:', e);
@@ -931,7 +935,6 @@
     if (!content) { showError('내용을 입력해주세요'); return; }
 
     const el = selectedElement;
-    const elementKey = el?.pbId || el?.componentName || el?.cssSelector || 'unknown';
 
     try {
       if (editingPolicyId) {
@@ -944,16 +947,39 @@
         });
         showToast('정책이 수정되었습니다');
       } else {
+        // componentId/pageId는 반드시 실제 DB UUID여야 함(백엔드가 findById로 조회).
+        // 과거엔 componentId에 pbId 문자열("Sidebar.div_2" 등)을, pageId에
+        // el.pageRoute(URL 경로 문자열, 예: "/projects/xxx")를 그대로 넣어 보내서
+        // 백엔드가 UUID로 착각해 조회 → 못 찾음 → 매번 404가 나던 실제 버그였음.
+        if (el && !el.resolvedComponentId) {
+          await resolveComponentId(el); // 성공 시 el.resolvedComponentId / el.resolvedPageId 채워짐
+        }
+
         const policyData = {
           policyType: type,
           scope,
           policyTitle: title,
           policyContent: content,
           tags: currentTags.join(','),
-          createdBy: 'system',
-          componentId: el?.resolvedComponentId || el?.componentId || elementKey,
-          pageId: el?.pageRoute || '/'
+          createdBy: 'system'
         };
+        // ELEMENT/COMPONENT 스코프는 컴포넌트 UUID가 있을 때만 연결
+        if ((scope === 'ELEMENT' || scope === 'COMPONENT') && el?.resolvedComponentId) {
+          policyData.componentId = el.resolvedComponentId;
+        }
+        // PAGE 스코프는 페이지 UUID가 있을 때만 연결 (GLOBAL은 둘 다 생략)
+        if (scope === 'PAGE' && el?.resolvedPageId) {
+          policyData.pageId = el.resolvedPageId;
+        }
+        if ((scope === 'ELEMENT' || scope === 'COMPONENT') && !policyData.componentId) {
+          showError('이 요소가 아직 스캔되지 않아 컴포넌트로 연결할 수 없습니다. 먼저 스캔한 뒤 다시 시도하세요.');
+          return;
+        }
+        if (scope === 'PAGE' && !policyData.pageId) {
+          showError('이 페이지가 아직 스캔되지 않아 페이지로 연결할 수 없습니다. 먼저 스캔한 뒤 다시 시도하세요.');
+          return;
+        }
+
         await createPolicy(policyData);
         showToast('정책이 등록되었습니다');
       }
