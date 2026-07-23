@@ -342,6 +342,9 @@
 
     // Policy modal
     document.getElementById('btnAddPolicy').addEventListener('click', () => openPolicyModal());
+    document.querySelectorAll('.policy-type-card').forEach(card => {
+      card.addEventListener('click', () => selectPolicyTypeCard(card.dataset.value));
+    });
     document.getElementById('btnCancelPolicy').addEventListener('click', closePolicyModal);
     document.getElementById('btnSavePolicy').addEventListener('click', () => savePolicy(false));
     document.getElementById('btnSaveAndCr').addEventListener('click', () => savePolicy(true));
@@ -863,6 +866,18 @@
   }
 
   // ─── Policy CRUD (API 연동) ───
+  // 정책 유형 카드 선택 (기획자 친화적 카드형 UI). 과거 sidepanel.html 안의
+  // 인라인 <script>/onclick="..."로 구현돼 있었는데, MV3 확장 페이지는 기본
+  // CSP(script-src 'self')가 인라인 스크립트/이벤트 핸들러를 전부 차단하기 때문에
+  // 카드를 클릭해도 아무 반응이 없었음. 외부 파일(sidepanel.js)로 옮겨 addEventListener로 처리.
+  function selectPolicyTypeCard(value) {
+    document.querySelectorAll('.policy-type-card').forEach(card => {
+      card.classList.toggle('selected', card.dataset.value === value);
+    });
+    const select = document.getElementById('policyType');
+    if (select) select.value = value;
+  }
+
   function openPolicyModal(policyId = null) {
     editingPolicyId = policyId;
     currentTags = [];
@@ -876,7 +891,7 @@
         const typeEl = card.querySelector('.policy-type');
         const titleEl = card.querySelector('.pc-title');
         const contentEl = card.querySelector('.pc-content');
-        if (typeEl) document.getElementById('policyType').value = typeEl.textContent.trim();
+        if (typeEl) selectPolicyTypeCard(typeEl.textContent.trim());
         if (titleEl) document.getElementById('policyTitle').value = titleEl.textContent.trim();
         if (contentEl) document.getElementById('policyContent').value = contentEl.textContent.trim();
         const tags = card.querySelectorAll('.pc-tags .tag');
@@ -884,7 +899,7 @@
       }
     } else {
       title.textContent = '새 정책 추가';
-      document.getElementById('policyType').value = 'UI_SPEC';
+      selectPolicyTypeCard('UI_SPEC');
       document.getElementById('policyTitle').value = '';
       document.getElementById('policyContent').value = '';
       const r = document.querySelector('input[name="scope"][value="ELEMENT"]');

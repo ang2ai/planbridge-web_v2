@@ -591,32 +591,32 @@
         <label>어떤 규칙인가요?</label>
         <!-- 기획자 친화적 카드형 선택 -->
         <div id="policyTypeCards" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
-          <button type="button" class="policy-type-card" data-value="VALIDATION" onclick="selectPolicyTypeCard('VALIDATION')">
+          <button type="button" class="policy-type-card" data-value="VALIDATION">
             <span style="font-size:16px">📝</span>
             <strong style="font-size:11px">입력 규칙</strong>
             <span style="font-size:10px;color:#8b949e">필수, 길이, 형식 검증</span>
           </button>
-          <button type="button" class="policy-type-card" data-value="UI_SPEC" onclick="selectPolicyTypeCard('UI_SPEC')">
+          <button type="button" class="policy-type-card" data-value="UI_SPEC">
             <span style="font-size:16px">👁️</span>
             <strong style="font-size:11px">화면 표시</strong>
             <span style="font-size:10px;color:#8b949e">포맷, 색상, 말줄임</span>
           </button>
-          <button type="button" class="policy-type-card" data-value="INTERACTION" onclick="selectPolicyTypeCard('INTERACTION')">
+          <button type="button" class="policy-type-card" data-value="INTERACTION">
             <span style="font-size:16px">🖱️</span>
             <strong style="font-size:11px">동작 규칙</strong>
             <span style="font-size:10px;color:#8b949e">클릭 시 반응, 모달</span>
           </button>
-          <button type="button" class="policy-type-card" data-value="BIZ_RULE" onclick="selectPolicyTypeCard('BIZ_RULE')">
+          <button type="button" class="policy-type-card" data-value="BIZ_RULE">
             <span style="font-size:16px">💼</span>
             <strong style="font-size:11px">업무 규칙</strong>
             <span style="font-size:10px;color:#8b949e">할인율, 권한 조건</span>
           </button>
-          <button type="button" class="policy-type-card" data-value="DATA_SPEC" onclick="selectPolicyTypeCard('DATA_SPEC')">
+          <button type="button" class="policy-type-card" data-value="DATA_SPEC">
             <span style="font-size:16px">🔌</span>
             <strong style="font-size:11px">데이터 연동</strong>
             <span style="font-size:10px;color:#8b949e">API 스펙, 데이터 형식</span>
           </button>
-          <button type="button" class="policy-type-card" data-value="PERMISSION" onclick="selectPolicyTypeCard('PERMISSION')">
+          <button type="button" class="policy-type-card" data-value="PERMISSION">
             <span style="font-size:16px">🔑</span>
             <strong style="font-size:11px">권한/접근</strong>
             <span style="font-size:10px;color:#8b949e">누가 볼 수 있는지</span>
@@ -703,19 +703,5 @@
 
   <script src="mock-policies.js"></script>
   <script src="sidepanel.js"></script>
-  <script>
-    // 정책 유형 카드 선택 함수 (전역 - onclick에서 호출)
-    function selectPolicyTypeCard(value) {
-      document.querySelectorAll('.policy-type-card').forEach(card => {
-        card.classList.toggle('selected', card.dataset.value === value);
-      });
-      const select = document.getElementById('policyType');
-      if (select) select.value = value;
-    }
-    // 초기 선택값 설정
-    document.addEventListener('DOMContentLoaded', () => {
-      selectPolicyTypeCard('VALIDATION');
-    });
-  </script>
 </body>
 </html>
