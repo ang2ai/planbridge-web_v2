@@ -887,6 +887,21 @@
     currentTags = [];
     const title = document.getElementById('modalTitle');
 
+    // 지금 이 정책이 어느 요소에 적용되는지 눈으로 확인할 수 있게 표시.
+    // (호버 시 뜨는 툴팁의 요소와 실제 "선택"된 요소가 다를 수 있어 헷갈리기 쉬움 —
+    //  선택은 클릭했을 때만 갱신되고, 마우스만 올린 상태는 툴팁만 바뀔 뿐 선택은 그대로임)
+    const targetInfoEl = document.getElementById('modalTargetInfo');
+    if (targetInfoEl) {
+      if (selectedElement) {
+        const label = selectedElement.pbId || selectedElement.componentName || selectedElement.cssSelector || '(알 수 없음)';
+        targetInfoEl.innerHTML = `🎯 적용 대상: <strong>${label}</strong>`;
+        targetInfoEl.style.color = '';
+      } else {
+        targetInfoEl.textContent = '⚠ 선택된 요소가 없습니다. 요소를 클릭한 뒤 다시 시도하세요.';
+        targetInfoEl.style.color = '#f59e0b';
+      }
+    }
+
     if (policyId) {
       title.textContent = '정책 수정';
       // 현재 카드에서 데이터 읽기 (이미 렌더된 카드 기준)
